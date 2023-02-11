@@ -1,0 +1,74 @@
+name: Approve student pull requests on student_hobbies.txt
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+permissions:
+  contents: write
+  packages: read
+  pull-requests: write
+
+jobs:
+  check-student_hobbies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - run: echo "HEAD_HASH=$(git show-ref ${{github.head_ref}} | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
+      - run: echo "BASE_HASH=$(git show-ref ${{github.base_ref}} | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
+          
+      - name: Evaluate changed files
+        id: changed_files
+        run: |-
+          git diff --name-only ${{github.base_ref}} ${HEAD_HASH} | grep -v 'student_hobbies.txt' && exit 1 || exit 0
+      - uses: mshick/add-pr-comment@v2
+        if: ${{ failure() && steps.changed_files.outcome == 'failure' }}
+        with:
+          message: |
+            Note– it looks like the student_hobbies.txt was deleted by your PR!
+            
+            Double-check how you changed the file and update your PR. We'll re-check automatically.
+
+      - name: Check student_hobbies.txt exists
+        id: check_exists
+        run: "git cat-file -e ${HEAD_HASH}:student_hobbies.txt"
+        if: ${{ success() }}
+      - uses: mshick/add-pr-comment@v2
+        if: ${{ failure() && steps.check_exists.outcome == 'failure' }}
+        with:
+          message: |
+            Note– it looks like the student_hobbies.txt was deleted by your PR!
+            
+            Double-check how you changed the file and update your PR. We'll re-check automatically.
+
+      - name: Check student_hobbies.txt format
+        id: check_format
+        run: |-
+          git cat-file -p ${HEAD_HASH}:student_hobbies.txt | grep -Ev "^$" | grep -Ev "^.*\s+\(([a-z0-9]{0,8},?\s+)*[a-z0-9]{0,8}\)$" && exit 1 || exit 0
+        if: success()
+      - uses: mshick/add-pr-comment@v2
+        if: failure() && steps.check_format.outcome == 'failure'
+        with:
+          message: |
+            Note– it looks like the student_hobbies.txt file doesn't conform to our format!
+            
+            Double-check how you changed the file and update your PR. We'll re-check automatically.
+        
+      - uses: mshick/add-pr-comment@v2
+        if: success()
+        with:
+          message: |
+            Nice job! We're merging your PR now...
+      - run: gh pr merge $NUMBER --auto --squash
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          NUMBER: ${{ github.event.pull_request.number }}
