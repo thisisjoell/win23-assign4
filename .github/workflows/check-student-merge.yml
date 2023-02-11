@@ -20,18 +20,20 @@ jobs:
         with:
           fetch-depth: 0
       
-      - run: echo "HEAD_HASH=$(git show-ref ${{github.head_ref}} | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
+      - run: git fetch origin pull/${{ github.event.number }}/merge:pr-merge--action
+      - run: echo "HEAD_HASH=$(git show-ref pr-merge--action | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
       - run: echo "BASE_HASH=$(git show-ref ${{github.base_ref}} | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
           
       - name: Evaluate changed files
         id: changed_files
         run: |-
-          git diff --name-only ${{github.base_ref}} ${HEAD_HASH} | grep -v 'student_hobbies.txt' && exit 1 || exit 0
+          git diff --name-only ${BASE_HASH} ${HEAD_HASH} | grep -v 'student_hobbies.txt' && exit 1 || exit 0
       - uses: mshick/add-pr-comment@v2
         if: ${{ failure() && steps.changed_files.outcome == 'failure' }}
         with:
           message: |
-            Note– it looks like the student_hobbies.txt was deleted by your PR!
+            Note– it looks like you changed files other than student_hobbies.txt. Please submit a PR
+            that ONLY changes that file.
             
             Double-check how you changed the file and update your PR. We'll re-check automatically.
 
