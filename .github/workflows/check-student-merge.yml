@@ -60,15 +60,22 @@ jobs:
             
             Double-check how you changed the file and update your PR. We'll re-check automatically.
         
-      - uses: mshick/add-pr-comment@v2
-        if: success()
-        with:
-          message: |
-            Nice job! We're merging your PR now...
       - run: gh pr merge $NUMBER --auto --squash
+        id: accept_pr
         if: success()
         env:
           GITHUB_TOKEN: ${{ github.token }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           NUMBER: ${{ github.event.pull_request.number }}
+      - uses: mshick/add-pr-comment@v2
+        if: success()
+        with:
+          message: |
+            Nice job! We're merging your PR now...
+      - uses: mshick/add-pr-comment@v2
+        if: ${{ failure() && steps.accept_pr.outcome == 'failure'}}
+        with:
+          message: |
+            Hm, something went wrong merging your PR. Is there a conflict?
+
