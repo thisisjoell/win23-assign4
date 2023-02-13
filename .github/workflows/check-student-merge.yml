@@ -19,11 +19,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
+
       - run: git fetch origin pull/${{ github.event.number }}/merge:pr-merge--action
       - run: echo "HEAD_HASH=$(git show-ref pr-merge--action | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
       - run: echo "BASE_HASH=$(git show-ref ${{github.base_ref}} | head -1 | grep -o '^[a-z0-9]*')" >> $GITHUB_ENV
-          
+
       - name: Evaluate changed files
         id: changed_files
         run: |-
@@ -34,7 +34,7 @@ jobs:
           message: |
             Note– it looks like you changed files other than student_hobbies.txt. Please submit a PR
             that ONLY changes that file.
-            
+
             Double-check how you changed the file and update your PR. We'll re-check automatically.
 
       - name: Check student_hobbies.txt exists
@@ -46,7 +46,7 @@ jobs:
         with:
           message: |
             Note– it looks like the student_hobbies.txt was deleted by your PR!
-            
+
             Double-check how you changed the file and update your PR. We'll re-check automatically.
 
       - name: Check student_hobbies.txt format
@@ -59,17 +59,17 @@ jobs:
         with:
           message: |
             Note– it looks like the student_hobbies.txt file doesn't conform to our format!
-            
+
             Double-check how you changed the file and update your PR. We'll re-check automatically.
-      
+
       - name: Check student_hobbies.txt no duplicates
         id: check_dups
         run: |-
-          export UNIQ_COUNT="$(grep -ioE '^.* \(' student_hobbies.txt | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq | wc -l)"
+          export UNIQ_COUNT="$(git cat-file -p ${HEAD_HASH}:student_hobbies.txt  | grep -ioE '^.* \(' | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq | wc -l)"
           if [[ "$UNIQ_COUNT" -ne 1 ]]; then
             exit 1
           fi
-          export UNIQ_NUMBER="$(grep -ioE '^.* \(' student_hobbies.txt | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq)"
+          export UNIQ_NUMBER="$(git cat-file -p ${HEAD_HASH}:student_hobbies.txt | grep -ioE '^.* \(' | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq)"
           if [[ "$UNIQ_COUNT" -ne 1 ]]; then
             exit 1
           fi
@@ -79,19 +79,19 @@ jobs:
         with:
           message: |
             Note– it looks like the student_hobbies.txt file doesn't conform to our format (it seems it has duplicate entries)!
-            
+
             Double-check how you changed the file and update your PR. We'll re-check automatically.
-        
+
       - name: Check student_hobbies.txt sorted
         id: check_sorted
         run: |-
-          sed -nE 's/^.*[(](.*)[)].*$/\1/p' student_hobbies.txt | awk '{ print gsub(/[0-9a-z]{1,8}+/, "") }' | sort -C || exit 1 && exit 0
+          git cat-file -p ${HEAD_HASH}:student_hobbies.txt | sed -nE 's/^.*[(](.*)[)].*$/\1/p' | awk '{ print gsub(/[0-9a-z]{1,8}+/, "") }' | sort -C || exit 1 && exit 0
       - uses: mshick/add-pr-comment@v2
         if: failure() && steps.check_sorted.outcome == 'failure'
         with:
           message: |
             Note– it looks like the student_hobbies.txt file doesn't conform to our format (it doesn't seem sorted)!
-            
+
             Double-check how you changed the file and update your PR. We'll re-check automatically.
 
       - run: gh pr merge $NUMBER --auto --squash
@@ -112,4 +112,3 @@ jobs:
         with:
           message: |
             Hm, something went wrong merging your PR. Is there a conflict?
-
