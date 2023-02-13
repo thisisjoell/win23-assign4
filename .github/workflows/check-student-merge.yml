@@ -27,7 +27,7 @@ jobs:
       - name: Evaluate changed files
         id: changed_files
         run: |-
-          git diff --name-only ${BASE_HASH} ${HEAD_HASH} | grep -v 'student_hobbies.txt' && exit 1 || exit 0
+          git diff --name-only ${HEAD_HASH}^ ${HEAD_HASH} | grep -v 'student_hobbies.txt' && exit 1 || exit 0
       - uses: mshick/add-pr-comment@v2
         if: ${{ failure() && steps.changed_files.outcome == 'failure' }}
         with:
