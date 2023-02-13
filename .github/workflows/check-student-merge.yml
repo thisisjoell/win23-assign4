@@ -85,7 +85,7 @@ jobs:
       - name: Check student_hobbies.txt sorted
         id: check_sorted
         run: |-
-          git cat-file -p ${HEAD_HASH}:student_hobbies.txt | sed -nE 's/^.*[(](.*)[)].*$/\1/p' | awk '{ print gsub(/[0-9a-z]{1,8}+/, "") }' | sort -C || exit 1 && exit 0
+          git cat-file -p ${HEAD_HASH}:student_hobbies.txt | sed -nE 's/^.*[(](.*)[)].*$/\1/p' | awk '{ print gsub(/[0-9a-z]{1,8}+/, "") }' | sort -nC || exit 1 && exit 0
       - uses: mshick/add-pr-comment@v2
         if: failure() && steps.check_sorted.outcome == 'failure'
         with:
