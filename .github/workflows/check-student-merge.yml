@@ -61,7 +61,39 @@ jobs:
             Note– it looks like the student_hobbies.txt file doesn't conform to our format!
             
             Double-check how you changed the file and update your PR. We'll re-check automatically.
+      
+      - name: Check student_hobbies.txt no duplicates
+        id: check_dups
+        run: |-
+          export UNIQ_COUNT="$(grep -ioE '^.* \(' student_hobbies.txt | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq | wc -l)"
+          if [[ "$UNIQ_COUNT" -ne 1 ]]; then
+            exit 1
+          fi
+          export UNIQ_NUMBER="$(grep -ioE '^.* \(' student_hobbies.txt | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq)"
+          if [[ "$UNIQ_COUNT" -ne 1 ]]; then
+            exit 1
+          fi
+          exit 0
+      - uses: mshick/add-pr-comment@v2
+        if: failure() && steps.check_dups.outcome == 'failure'
+        with:
+          message: |
+            Note– it looks like the student_hobbies.txt file doesn't conform to our format (it seems it has duplicate entries)!
+            
+            Double-check how you changed the file and update your PR. We'll re-check automatically.
         
+      - name: Check student_hobbies.txt sorted
+        id: check_sorted
+        run: |-
+          sed -nE 's/^.*[(](.*)[)].*$/\1/p' student_hobbies.txt | awk '{ print gsub(/[0-9a-z]{1,8}+/, "") }' | sort -C || exit 1 && exit 0
+      - uses: mshick/add-pr-comment@v2
+        if: failure() && steps.check_sorted.outcome == 'failure'
+        with:
+          message: |
+            Note– it looks like the student_hobbies.txt file doesn't conform to our format (it doesn't seem sorted)!
+            
+            Double-check how you changed the file and update your PR. We'll re-check automatically.
+
       - run: gh pr merge $NUMBER --auto --squash
         id: accept_pr
         if: success()
