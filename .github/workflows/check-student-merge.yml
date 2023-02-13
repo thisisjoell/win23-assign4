@@ -67,10 +67,12 @@ jobs:
         run: |-
           export UNIQ_COUNT="$(git cat-file -p ${HEAD_HASH}:student_hobbies.txt  | grep -ioE '^.* \(' | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq | wc -l)"
           if [[ "$UNIQ_COUNT" -ne 1 ]]; then
+            echo "UNIQ_COUNT=$UNIQ_COUNT"
             exit 1
           fi
           export UNIQ_NUMBER="$(git cat-file -p ${HEAD_HASH}:student_hobbies.txt | grep -ioE '^.* \(' | grep -ioE '^[^(]*' | sort | uniq -c | grep -ioE '^.*[0-9]+' | grep -o '[0-9]*' | sort -n | uniq)"
-          if [[ "$UNIQ_COUNT" -ne 1 ]]; then
+          if [[ "$UNIQ_NUMBER" -ne 1 ]]; then
+            echo "UNIQ_NUMBER=$UNIQ_NUMBER"
             exit 1
           fi
           exit 0
